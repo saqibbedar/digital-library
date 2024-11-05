@@ -1,3 +1,4 @@
+
 /*      My Digital Library Information System       */
 
 /*                  Features
@@ -239,7 +240,7 @@ public:
 
     // welcome_page_menu
     void home_page_menu(const char* page_title) const{
-        std::cout << page_title << std::endl; // Menu tilte
+        std::cout << page_title << std::endl; // Menu title
 
         // Menu Options
         std::cout << "1. Search a Book" << std::endl
@@ -254,7 +255,7 @@ public:
 
     // search_page_menu
     void search_page_menu(const char* page_title) const{
-        std::cout << page_title << std::endl; // Menu tilte
+        std::cout << page_title << std::endl; // Menu title
 
         // Menu Options
         std::cout << "1. Search a Book by Name" << std::endl
@@ -264,6 +265,20 @@ public:
                   << "5. Help" << std::endl
                   << "6. exit" << std::endl;
 
+    }
+
+    // help_page_menu
+    void help_page_menu(const char* page_title) const{
+        std::cout << page_title << std::endl; // Menu title
+
+        // Menu Options
+        std::cout << "1. About My Digital Library System" << std::endl
+                  << "2. How can I use it?" << std::endl
+                  << "3. List Contributors" << std::endl
+                  << "4. View Source Code" << std::endl
+                  << "5. View LICENSE" << std::endl
+                  << "6. Back to Main Menu" << std::endl
+                  << "7. exit" << std::endl;
     }
 
 };
@@ -332,16 +347,12 @@ public:
             int size = utils.records_len(filename); // get objects size
             std::cout << "Size of records: " << size << std::endl;
 
-            do{
-                if(index < 0 || index >= size){
-                    std::cout << "Invalid index: " << index << std::endl;
-                    throw("Error: <Invalid index> Please enter valid index");
-                    std::cout << "Enter a index: ";
-                    std::cin >> index;
-                } else {
-                    break;
-                }
-            } while (true);
+            while (index < 0 || index >= size){
+                std::cout << "Invalid index: " << index << std::endl;
+                throw("Error: <Invalid index> Please enter valid index");
+                std::cout << "Enter a index: ";
+                std::cin >> index;
+            }
 
             books = new BookModel[size]; // assign memory
             std::cout << "Memory allocated for books array." << std::endl;
@@ -594,7 +605,7 @@ public:
                         break;
 
                     case 7: // Show help i.e. how to use Application
-                        std::cout << "Help page" << std::endl;
+                        help_page(filename);
                         break;
 
                     case 8: // Terminate program
@@ -674,7 +685,7 @@ public:
                                 break;
 
                             case 5: // help page
-                                std::cout << "Help page" << std::endl;
+                                help_page(filename);
                                 break;
 
                             case 6: // exit program
@@ -695,6 +706,79 @@ public:
         } while (true);
                         
     }
+
+    void help_page(const char* filename){
+
+        while(true) {
+
+            try
+            {
+                utils.help_page_menu("\n\tMy Digital Library Help Center\n"); // Page title
+
+                // input option and render data menu wise
+                int option;
+                std::cout << "\nEnter a option [1, 2, 3, 4, 5, 6, 7]: ";
+                std::cin >> option;
+
+                // terminate program incase of bad type error
+                if(std::cin.fail()){ // bad type error
+                    std::cout << "Error: <Invalid type> Program crashed due to invalid type"; // print exception message before program terminates
+                    exit(0); // exist program
+                }
+
+                if(option <= 0 || option > 8){ // validate option
+                    throw("Error: <Invalid option> Please enter valid option");
+                } else { // perform actions 
+
+                    switch (option)
+                    {
+                        case 1: // About My Digital Library
+                            std::cout << "\nMy Digital Library is a console based application built using C++. It includes various features such as: " <<std::endl
+                            << "\n- Perform CURD Operations\n- Store Books Based on Categories\n- Search Books Based on Category, Author Name and Book Title\n- Smooth Architecture\n- Save Records with Unique ID's and more" << std::endl;
+                            break;
+
+                        case 2: // How I can use it?
+                            std::cout << "How to use it?" << std::endl;
+                            break;
+
+                        case 3: // List Contributors
+                            std::cout << "\nContributor: (1)" << std::endl
+                                    << "Saqib Bedar [GitHub: https://github.com/saqibbedar/]" << std::endl;
+                            break;
+                        
+                        case 4: // View Source Code
+                            std::cout << "\nSource Code: https://github.com/saqibbedar/digital-library" << std::endl;
+                            break;
+
+                        case 5: // View LICENSE
+                            std::cout << "\nMIT LICENSE" << std::endl
+                                    << "Copyright (c) 2024 Saqib Bedar" << std::endl;
+                            break;
+
+                        case 6: // Back to Main Menu
+                            home_page(filename, "\n\tMy Digital Library Search System\n");
+                            break;
+
+                        case 7: // Terminate Program
+                            std::cout << "\nThank You for using My Digital Library System" << std::endl;
+                            exit(0);
+
+                        default: // Throw exception incase of invalid option
+                            throw("Error: <Invalid option> Please enter valid option");
+                            break;
+                    }
+                }
+            }
+
+            catch(const char* error)
+            {
+                std::cerr << error << std::endl;
+            }
+
+        }
+        
+    }
+
 };
 
 int main(){

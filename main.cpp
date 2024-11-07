@@ -35,7 +35,7 @@ class BookModel {
     char category[12]; // book category
     std::string categories[4] = {"General", "Literature", "Science", "Religion"}; // default categories
 
-    // friend class Utility; // Access to BookModel Schema
+    friend class Utility; // Access to BookModel Schema
     friend class BACKEND; // Access to BookModel Schema
 
 public:
@@ -206,6 +206,8 @@ public:
         }
     }
 
+    /*      Reading Writing to Binary Files     */
+
     // Write to a file
     void writeToFile(const char* filename, const BookModel* books, int size){
         // Best: O(n)
@@ -245,6 +247,98 @@ public:
         }
     }
 
+    /*      Reading Writing to CSV Files        */
+
+    // Get CSV File Length
+    int GetCSVLength(const char* filename){
+        try
+        {
+            std::ifstream f;
+            f.open(filename);
+
+            if(!f){
+                f.close();
+                throw("Error: <CSV File> Unable to open file");
+            } else {
+
+                // get file size
+                f.seekg(0, std::ios::end);
+                std::streampos filesize = f.tellg();
+                f.seekg(0, std::ios::beg);
+
+                int size = filesize / sizeof(BookModel);
+
+                f.close();
+
+                return size;
+            }
+        }
+        catch(const char* error)
+        {
+            std::cerr << error << std::endl;
+        }
+        
+    }
+
+    void WriteToCSVFile(const char* filename, int size){
+
+            std::cout
+            << "Export to CSV file" << std::endl;
+
+        // try
+        // {
+        //     if(size <= 0) {
+        //         throw("Error: <Zero Records> No records found in BookModel.bin file");
+        //     }
+
+        //     else {
+
+        //         std::ofstream f;
+        //         f.open(filename, std::ios::out | std::ios::app);
+
+        //         if(!f){ // if no file
+        //             f.close();
+        //             throw("Error: <Binary File> Unable to open file");
+        //         } 
+        //         else { // if file available
+
+        //             BookModel *books;
+
+        //             books = new BookModel[size]; // assign new memory
+
+        //             readFromFile(filename, books, size);
+
+        //             int csv_file_size = GetCSVLength("BookModel.csv"); // get csv file size
+
+        //             if(csv_file_size <= 0){ // if its first time then write this to file
+
+        //                 f << "_id\t\t" << "Name\t\t\t" << "Author\t\t" << "Category" << std::endl;
+                        
+        //                 for (int i = 0; i < size; ++i) {
+        //                     f << books[i].unique_id << "\t\t" << books[i].book_name << "\t\t\t" << books[i].book_author << "\t\t" << books[i].category << std::endl;
+        //                 }
+                            
+        //             } else {
+        //                 for (int i = 0; i < size; ++i) {
+        //                     f << books[i].unique_id << "\t\t" << books[i].book_name << "\t\t\t" << books[i].book_author << "\t\t" << books[i].category << std::endl;
+        //                 }
+        //             }
+
+        //             delete[] books;
+        //         }
+        //     }
+        // }
+        // catch(const char* error)
+        // {
+        //     std::cerr << error << std::endl;
+        // }
+        
+    }
+
+    void ReadFromCSVFile(const char* filename) {
+        std::cout << "Hello, from Read file" << std::endl;
+    }
+
     // Convert String To LowerCase
     void toLowerCase(char* str) {
         for (int i = 0; str[i] != '\0'; ++i) {
@@ -264,9 +358,10 @@ public:
                   << "3. Contribute a Book" << std::endl
                   << "4. Update a Book" << std::endl
                   << "5. Delete a Book" << std::endl
-                  << "6. Import & Export CSV File Data" << std::endl
-                  << "7. Help" << std::endl
-                  << "8. exit" << std::endl;
+                  << "6. Export data to CSV File" << std::endl
+                  << "7. Import data from CSV File & Display" << std::endl
+                  << "8. Help" << std::endl
+                  << "9. exit" << std::endl;
     }
 
     // search_page_menu
@@ -334,7 +429,8 @@ public:
     }
 
     // POST RECORD
-    void POST(const char* filename, int size){
+    void POST(const char* filename, int size)
+    {
         // Best: O(n)
         // Worst: O(n)
         try
@@ -673,14 +769,18 @@ public:
                         break;
 
                     case 6: // handle CSV import export
-                        std::cout << "Import Export page" << std::endl;
+                        utils.WriteToCSVFile(filename, records_size);
                         break;
 
-                    case 7: // Show help i.e. how to use Application
+                    case 7:
+                        utils.ReadFromCSVFile("BookModel.csv");
+                        break;
+
+                    case 8: // Show help i.e. how to use Application
                         help_page(filename);
                         break;
 
-                    case 8: // Terminate program
+                    case 9: // Terminate program
                         std::cout << "\nThank You for using My Digital Library System" << std::endl;
                         exit(0);
 
@@ -855,9 +955,36 @@ public:
 
 };
 
-int main(){
-    const char filename[14] = "BookModel.bin";
+void handleFirstTime(const char* filename){ // if BookModel.bin is empty or not available, this function would be executed then only
+    std::cout << "\nWe can't find the BookModel.bin file" << std::endl
+              << "Please enter few records to interact with our Digital Library System" << std::endl;
 
+    int records_size;
+    std::cout << "Enter size: ";
+    std::cin >> records_size;
+
+    BookModel *books;
+    
+    try{
+        books = new BookModel[records_size];
+
+        for (int i = 0; i < records_size; i++)
+        {
+            books[i].input(filename);
+        }
+
+        Utility utils;
+
+        utils.writeToFile(filename, books, records_size);
+
+        delete[] books;
+    } catch(const char* error) {
+        delete[] books;
+        std::cerr << error << std::endl;
+    }
+}
+
+void RunApp(const char* filename){ // main function to run whole application
     FRONTEND f;
 
     bool isFirstIteration = true; // to manage welcome_page title
@@ -877,7 +1004,21 @@ int main(){
             std::cerr << error << std::endl;
         }
     } while (true);
+}
 
+int main(){
+    const char filename[14] = "BookModel.bin";
+
+    Utility utils;
+
+    int records_size = utils.records_len(filename);
+
+    if(records_size <= 0)  {
+        handleFirstTime(filename);
+    } else {
+        RunApp(filename);
+    }
+    
     return 0;
 }
 

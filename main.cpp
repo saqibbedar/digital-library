@@ -20,7 +20,7 @@
 #include <cctype>  // for tolower
 
 // Utility class handle file operations and holds helper functions
-class Utility; // forward declartion to use it in BookModel
+class Utility; // forward declaration to use it in BookModel
 class BACKEND; // forward declaration 
 
 // Book Models
@@ -324,7 +324,7 @@ public:
             books = new BookModel[size]; // allocate memory 
 
             for (int i = 0; i < size; ++i){
-                std::cout << std::endl; // for better readibility in console
+                std::cout << std::endl; // for better readability in console
                 books[i].input(); // input records
             }
 
@@ -373,7 +373,7 @@ public:
 
             if(!f){
                 f.close();
-                throw("Error: <file> Unable to open file"); // incase of file is not availble
+                throw("Error: <file> Unable to open file"); // incase of file is not available
             } else{
                 std::cout << "Writing updated record to file";
                 f.write((const char *)&books[index], sizeof(BookModel)); // update the file
@@ -431,7 +431,7 @@ public:
             delete[] books; // free memory
     }
 
-    // Search by bookname
+    // Search by book Name
     void SearchByBookName(const char* filename, char *book_title){
 
         try
@@ -472,7 +472,7 @@ public:
         
     }
 
-    // Search by authorname
+    // Search by Author Name
     void SearchByAuthorName(const char* filename, const char *author_name){
 
             int size = utils.records_len(filename); // get total records
@@ -484,7 +484,7 @@ public:
             bool currentState = true; // flag 
 
             for (int i = 0; i < size; ++i){
-                if(strcmp(author_name, books[i].book_author) == 0){ // comapre author name
+                if(strcmp(author_name, books[i].book_author) == 0){ // compare author name
                     currentState = false; // set currentState to false any record found
                     books[i].display(); // display records
                     std::cout << std::endl;
@@ -640,7 +640,7 @@ public:
 
                     // terminate program incase of bad type error
                     if(std::cin.fail()){
-                        std::cout << "Error: <Invalid type> Program crashed due to invalid type"; // print exception messabefore program terminates
+                        std::cout << "Error: <Invalid type> Program crashed due to invalid type"; // print exception before program terminates
                         exit(0); // exist program
                     }
 
@@ -803,6 +803,6 @@ int main(){
             std::cerr << error << std::endl;
         }
     } while (true);
-    
+
     return 0;
 }

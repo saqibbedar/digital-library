@@ -179,84 +179,110 @@ class Utility {
 
 public:
 
+    /*      Working with Binary Files     */
+
     // Return Total length of Records/Objects in a binary file
     int records_len(const char* filename){
-        // setup ifstream
-        std::ifstream f;
-        
-        f.open(filename, std::ios::binary | std::ios::in);
+        // Best: O(1)
+        // Worst: O(1)
 
-        if(!f.is_open()){ // if not file throw exception
-            f.close();
-            throw("Error: <file> Unable to open file");
-        } else { // if file is available
+        try
+        {
+            // setup ifstream
+            std::ifstream f(filename, std::ios::binary | std::ios::in);
 
-            // Get the file size
-            f.seekg(0, std::ios::end);
-            std::streampos file_size = f.tellg();
-            f.seekg(0, std::ios::beg);
+            if(!f.is_open()){ // if not file throw exception
+                f.close();
+                throw("Error: <file> Unable to open file");
+            } else { // if file is available
 
-            f.close(); // close file
+                // Get the file size
+                f.seekg(0, std::ios::end);
+                std::streampos file_size = f.tellg();
+                f.seekg(0, std::ios::beg);
 
-            // calculate the no. of objects || Students records
-            int size = file_size / sizeof(BookModel);
+                f.close(); // close file
 
-            // return Student objects size || total records
-            return size;
+                // calculate the no. of objects || Students records
+                int size = file_size / sizeof(BookModel);
+
+                // return Student objects size || total records
+                return size;
+            }
         }
+        catch(const char* error)
+        {
+            std::cerr << error << std::endl;
+        }
+        
     }
 
-    /*      Reading Writing to Binary Files     */
-
-    // Write to a file
+    // Write to a file binary file
     void writeToFile(const char* filename, const BookModel* books, int size){
         // Best: O(n)
         // Worst: O(n)
 
-        // setup ofstream
-        std::ofstream f;
-        f.open(filename, std::ios::binary | std::ios::app | std::ios::out);
+        try
+        {
+            // setup ofstream
+            std::ofstream f(filename, std::ios::binary | std::ios::app | std::ios::out);
 
-        if(!f.is_open()){ // if file is not available
-            f.close();
-            throw("Error: <file> Unable to open file");
-        } else { // if available
-            for (int i = 0; i<size; ++i){
-                f.write((const char *)&books[i], sizeof(BookModel));
-            }    
+            if(!f.is_open()){ // if file is not available
+                f.close();
+                throw("Error: <file> Unable to open file");
+            } else { // if available
+                for (int i = 0; i<size; ++i){
+                    f.write((const char *)&books[i], sizeof(BookModel));
+                }    
+            }
+
+            f.close(); // close file
         }
-
-        f.close(); // close file
+        catch(const char* error)
+        {
+            std::cerr << error << std::endl;
+        }
+        
     }
 
-    // Read from file
+    // Read from file binary file
     void readFromFile(const char* filename, BookModel* books, int size){
         // Best: O(1)
         // Worst: O(1)
 
-        // setup ifstream
-        std::ifstream f;
-        f.open(filename, std::ios::binary | std::ios::in);
-
-        if(!f.is_open()){ // if file is not available
-            f.close();
-            throw("Error: <file> Unable to open file");
-        } else { // if available
-            f.read((char *)books, size * sizeof(BookModel)); // read file
-            f.close(); // close file
-        }
-    }
-
-    /*      Reading Writing to CSV Files        */
-
-    // Get CSV File Length
-    int GetCSVLength(const char* filename){
         try
         {
+            // setup ifstream
             std::ifstream f;
-            f.open(filename);
+            f.open(filename, std::ios::binary | std::ios::in);
 
-            if(!f){
+            if(!f.is_open()){ // if file is not available
+                f.close();
+                throw("Error: <file> Unable to open file");
+            } else { // if available
+                f.read((char *)books, size * sizeof(BookModel)); // read file
+                f.close(); // close file
+            }
+        }
+        catch(const char* error)
+        {
+            std::cerr << error << std::endl;
+        }
+        
+    }
+
+    /*      Working with CSV Files        */
+
+    // Get total records length from CSV file 
+    int GetCSVLength(const char* filename){
+        // Best: O(1)
+        // Worst: O(1)
+
+        try
+        {
+            std::ifstream f(filename);
+
+            if(!f.is_open()){
                 f.close();
                 throw("Error: <CSV File> Unable to open file");
             } else {
@@ -280,8 +306,10 @@ public:
         
     }
 
+    // write to CSV file
     void WriteToCSVFile(const char* filename, int size){
-
+        // Best: O(1)
+        // Worst: O(1)
             std::cout
             << "Export to CSV file" << std::endl;
 
@@ -335,11 +363,26 @@ public:
         
     }
 
+    // Read from CSV file
     void ReadFromCSVFile(const char* filename) {
-        std::cout << "Hello, from Read file" << std::endl;
+        // Best: O(1)
+        // Worst: O(1)
+
+        std::ifstream f;
+        f.open("BookModel.csv");
+        if(!f.is_open()){
+            throw("Error: <file> Unable to open file");
+        } else {
+            std::string temp;
+            std::cout << "\n\t Data imported from CSV file` \n" << std::endl;
+            while(f.good()){
+                std::getline(f, temp);
+                std::cout << temp << std::endl;
+            }
+        }
     }
 
-    // Convert String To LowerCase
+    // Utility Function: Convert String To LowerCase
     void toLowerCase(char* str) {
         for (int i = 0; str[i] != '\0'; ++i) {
             str[i] = std::tolower(str[i]); 
@@ -350,6 +393,7 @@ public:
 
     // welcome_page_menu
     void home_page_menu(const char* page_title) const{
+
         std::cout << page_title << std::endl; // Menu title
 
         // Menu Options
@@ -358,14 +402,15 @@ public:
                   << "3. Contribute a Book" << std::endl
                   << "4. Update a Book" << std::endl
                   << "5. Delete a Book" << std::endl
-                  << "6. Export data to CSV File" << std::endl
-                  << "7. Import data from CSV File & Display" << std::endl
+                  << "6. Export Binary file data to CSV File" << std::endl
+                  << "7. Import CSV file data to Binary File" << std::endl
                   << "8. Help" << std::endl
                   << "9. exit" << std::endl;
     }
 
     // search_page_menu
     void search_page_menu(const char* page_title) const{
+
         std::cout << page_title << std::endl; // Menu title
 
         // Menu Options
@@ -380,6 +425,7 @@ public:
 
     // help_page_menu
     void help_page_menu(const char* page_title) const{
+
         std::cout << page_title << std::endl; // Menu title
 
         // Menu Options
@@ -663,7 +709,7 @@ public:
             {
                 // input option and render data menu wise
                 int option;
-                std::cout << "\nEnter a option [1, 2, 3, 4, 5, 6, 7]: ";
+                std::cout << "\nEnter a option [1, 2, 3, 4, 5, 6, 7, 8, 9]: ";
                 std::cin >> option;
 
                 // terminate program incase of bad type error

@@ -1,4 +1,3 @@
-
 /*      My Digital Library Information System       */
 
 /*                  Features
@@ -25,14 +24,14 @@ class BACKEND; // forward declaration
 
 bool FindByUID(const char *filename, int uid); // unique_id handler
 
-// Book Models
+// Book Model
 class BookModel {
     // Book schema
     int unique_id; // book unique id
-    char book_name[70]; // book name
-    char book_author[50]; // book author
-    int year_of_publish; // Book published year
-    char category[12]; // book category
+    char book_name[150]; // book name
+    char book_author[100]; // book author
+    char year_of_publish[50]; // Book published year
+    char category[50]; // book category
     std::string categories[4] = {"General", "Literature", "Science", "Religion"}; // default categories
 
     friend class Utility; // Access to BookModel Schema
@@ -40,11 +39,11 @@ class BookModel {
 
 public:
     // constructor
-    BookModel(int uid=0, const char* bn="", const char* author="", int yop=0, const char* category=""){
+    BookModel(int uid=0, const char* bn="", const char* author="", const char* yop="", const char* category=""){
         this->unique_id = uid;
         strcpy(book_name, bn);
         strcpy(book_author, author);
-        this->year_of_publish = yop;
+        strcpy(year_of_publish, yop);
         strcpy(this->category, category);
     };
 
@@ -73,11 +72,11 @@ public:
             try
             {
                 std::cout << "Enter Book Name: ";
-                std::cin.getline(book_name, 70);
+                std::cin.getline(book_name, 150);
 
-                if(strlen(book_name) < 4 )
-                    throw("Error: <Shor Name> Please enter atleast 4-char name");
-                if(strlen(book_name) > 70)
+                if(std::strlen(book_name) < 4 )
+                    throw("Error: <Short Name> Please enter atleast 4-char name");
+                if(std::strlen(book_name) >= 150)
                     throw("Error: <Long Name> Please enter 70-char name only");
                 
                 break;
@@ -93,10 +92,10 @@ public:
             try
             {
                 std::cout << "Enter Book Author: ";
-                std::cin.getline(book_author, 50);
-                if(strlen(book_author) < 3)
+                std::cin.getline(book_author, 100);
+                if(std::strlen(book_author) < 3)
                     throw("Error: <Short Name> Please enter atleast 3-char name");
-                if(strlen(book_author) > 50)
+                if(std::strlen(book_author) >= 100)
                     throw("Error: <Long Name> Please enter 50-char name only");
                 break;
             }
@@ -110,18 +109,22 @@ public:
             try
             {
                 std::cout << "Enter Year of Publish: ";
-                std::cin >> year_of_publish;
+                std::cin.getline(year_of_publish, 50);
 
-                // terminate program incase of bad type error
-                if(std::cin.fail()){ // bad type error
-                    std::cout << "Error: <Invalid type> Program crashed due to invalid type"; // print exception message before program terminates
-                    exit(0); // exist program
+                if (std::strlen(year_of_publish) != 4) {
+                    throw("Error: <Invalid publish year> Please enter a 4-digit number");
                 }
 
-                if(year_of_publish > 2024)
-                    throw("Error: <Invalid publish year> Publish year can't be > 2024");
-                if(year_of_publish < 1000)
-                    throw("Error: <Invalid publish year> Please enter 4-digit number");
+                if(is_number(year_of_publish)){
+                    int year = std::stoi(year_of_publish);
+                    if(year >= 2024)
+                        throw("Error: <Invalid publish year> Publish year can't be > 2024");
+                    if(year < 1000)
+                        throw("Error: <Invalid publish year> Please enter a 4-digit number");
+                } else {
+                    throw("Error: <Invalid type> Please enter numbers only");
+                }
+
                 break;
             }
             catch(const char* error)
@@ -130,14 +133,12 @@ public:
             }
         } while (true);
 
-        std::cin.ignore();
-
         do{ // validate Category
             try
             {
                 std::cout << "Select a category [General, Literature, Science, Religion]: ";
-                std::cin.getline(category, 12);
-                if(!find_category(category) || strlen(category) > 12)
+                std::cin.getline(category, 50);
+                if(!find_category(category) || std::strlen(category) >= 12)
                     throw("Error: <Invalid category> Please select a valid category");
                 break;
             }
@@ -171,6 +172,16 @@ public:
         }
         return false;
     }
+
+    // handle year_of_publish input
+    bool is_number(const char* yop){
+        for (int i = 0; i < strlen(yop); ++i){
+            if(!std::isdigit(yop[i])){
+                return false;
+            }
+        }
+        return true;
+    }
     
 };
 
@@ -184,35 +195,26 @@ public:
     // Return Total length of Records/Objects in a binary file
     int records_len(const char* filename){
         // Best: O(1)
-        // Worst: O(1)
+        // Worst: O(1)// setup ifstream
+        std::ifstream f(filename, std::ios::binary | std::ios::in);
 
-        try
-        {
-            // setup ifstream
-            std::ifstream f(filename, std::ios::binary | std::ios::in);
+        if(!f.is_open()){ // if not file throw exception
+            f.close();
+            return 0; // if file does not exist
+        } else { // if file is available
 
-            if(!f.is_open()){ // if not file throw exception
-                f.close();
-                throw("Error: <file> Unable to open file");
-            } else { // if file is available
+            // Get the file size
+            f.seekg(0, std::ios::end);
+            std::streampos file_size = f.tellg();
+            f.seekg(0, std::ios::beg);
 
-                // Get the file size
-                f.seekg(0, std::ios::end);
-                std::streampos file_size = f.tellg();
-                f.seekg(0, std::ios::beg);
+            f.close(); // close file
 
-                f.close(); // close file
+            // calculate the no. of objects || Students records
+            int size = file_size / sizeof(BookModel);
 
-                // calculate the no. of objects || Students records
-                int size = file_size / sizeof(BookModel);
-
-                // return Student objects size || total records
-                return size;
-            }
-        }
-        catch(const char* error)
-        {
-            std::cerr << error << std::endl;
+            // return Student objects size || total records
+            return size;
         }
         
     }
@@ -229,7 +231,7 @@ public:
 
             if(!f.is_open()){ // if file is not available
                 f.close();
-                throw("Error: <file> Unable to open file");
+                throw("Error: <file> Unable to open file to write ");
             } else { // if available
                 for (int i = 0; i<size; ++i){
                     f.write((const char *)&books[i], sizeof(BookModel));
@@ -275,91 +277,68 @@ public:
 
     // Get total records length from CSV file 
     int GetCSVLength(const char* filename){
-        // Best: O(1)
-        // Worst: O(1)
-
-        try
-        {
-            std::ifstream f(filename);
-
-            if(!f.is_open()){
-                f.close();
-                throw("Error: <CSV File> Unable to open file");
-            } else {
-
-                // get file size
-                f.seekg(0, std::ios::end);
-                std::streampos filesize = f.tellg();
-                f.seekg(0, std::ios::beg);
-
-                int size = filesize / sizeof(BookModel);
-
-                f.close();
-
-                return size;
-            }
-        }
-        catch(const char* error)
-        {
-            std::cerr << error << std::endl;
-        }
+        // Best: O(n)
+        // Worst: O(n)
         
+        std::ifstream f(filename);
+        int size = 0;
+        std::string line; // count the lines
+
+        if(!f.is_open()){
+            f.close();
+            return 0;
+        } else {
+            while (std::getline(f, line)) {
+                ++size;
+            }
+            f.close();
+            return size - 1; // -1 for firs line data headings
+        }
     }
 
     // write to CSV file
     void WriteToCSVFile(const char* filename, int size){
-        // Best: O(1)
-        // Worst: O(1)
-            std::cout
-            << "Export to CSV file" << std::endl;
+        // Best: O(n)
+        // Worst: O(n)
 
-        // try
-        // {
-        //     if(size <= 0) {
-        //         throw("Error: <Zero Records> No records found in BookModel.bin file");
-        //     }
+        try
+        {
 
-        //     else {
+            BookModel *books = new BookModel[size];
+            readFromFile(filename, books, size); // read all records
 
-        //         std::ofstream f;
-        //         f.open(filename, std::ios::out | std::ios::app);
+            // setup ofstream to write records to csv file
+            std::ofstream f("BooksModel.csv", std::ios::app);
 
-        //         if(!f){ // if no file
-        //             f.close();
-        //             throw("Error: <Binary File> Unable to open file");
-        //         } 
-        //         else { // if file available
+            if(!f.is_open()) {
+                f.close();
+                delete[] books;
+                throw("Error: <file> Unable to open CSV file to write records");
+            } else {
 
-        //             BookModel *books;
 
-        //             books = new BookModel[size]; // assign new memory
+                int csv_file_size = GetCSVLength("BooksModel.csv"); // get records from csv file
 
-        //             readFromFile(filename, books, size);
+                if(csv_file_size <= 0) { // headings
+                    f << "_id,Name,Author,Published,Category" << std::endl;
+                }
 
-        //             int csv_file_size = GetCSVLength("BookModel.csv"); // get csv file size
+                // write to csv
+                for (int i = 0; i < size; ++i) {
+                    f << books[i].unique_id << "," << books[i].book_name << "," << books[i].book_author << "," << books[i].year_of_publish << "," << books[i].category << std::endl;
+                }
 
-        //             if(csv_file_size <= 0){ // if its first time then write this to file
+                std::cout << "\nData Exported Successfully to CSV file" << std::endl;
 
-        //                 f << "_id\t\t" << "Name\t\t\t" << "Author\t\t" << "Category" << std::endl;
-                        
-        //                 for (int i = 0; i < size; ++i) {
-        //                     f << books[i].unique_id << "\t\t" << books[i].book_name << "\t\t\t" << books[i].book_author << "\t\t" << books[i].category << std::endl;
-        //                 }
-                            
-        //             } else {
-        //                 for (int i = 0; i < size; ++i) {
-        //                     f << books[i].unique_id << "\t\t" << books[i].book_name << "\t\t\t" << books[i].book_author << "\t\t" << books[i].category << std::endl;
-        //                 }
-        //             }
+                f.close();
+                delete[] books;
+            }
 
-        //             delete[] books;
-        //         }
-        //     }
-        // }
-        // catch(const char* error)
-        // {
-        //     std::cerr << error << std::endl;
-        // }
+        }
+        catch(const char *error)
+        {
+            std::cerr << error << std::endl;
+        }
         
     }
 
@@ -369,16 +348,25 @@ public:
         // Worst: O(1)
 
         std::ifstream f;
-        f.open("BookModel.csv");
+        f.open("BooksModel.csv");
         if(!f.is_open()){
-            throw("Error: <file> Unable to open file");
+            throw("Error: <file> Unable to open CSV file for reading");
         } else {
-            std::string temp;
-            std::cout << "\n\t Data imported from CSV file` \n" << std::endl;
-            while(f.good()){
-                std::getline(f, temp);
-                std::cout << temp << std::endl;
+
+            int size = GetCSVLength("BooksModel.csv");
+            BookModel *books = new BookModel[size];
+            // read the data
+            for (int i = 0; i < size; ++i){
+                f >> books[i].unique_id >> books[i].book_name >> books[i].book_author >> books[i].year_of_publish >> books[i].category;
             }
+
+            for (int i = 0; i < size; ++i){
+                books[i].display();
+                std::cout << std::endl;
+            }
+                // writeToFile(filename, books, size);
+
+            delete[] books;
         }
     }
 
@@ -443,7 +431,6 @@ public:
 // Perform CURD operations & Application Logic
 class BACKEND {
     Utility utils; // helper functions
-    BookModel *books; // Application data model i.e. Book Schema
 
 public:
 
@@ -453,67 +440,74 @@ public:
     void GET(const char* filename){
         // Best: O(n)
         // Worst: O(n)
+        int size = utils.records_len(filename);
+        std::cout << "Debug: Allocating memory for books array of size " << size << std::endl;
+        BookModel *books = new BookModel[size];
         try
         {
-            int size = utils.records_len(filename);
-            books = new BookModel[size];
             utils.readFromFile(filename, books, size);
             std::cout << "\n\t All Library Books \n" << std::endl;
             for (int i = 0; i < size; ++i){
                 books[i].display();
                 std::cout << std::endl;
             }
-            // std::cout << "It is working till here..." << std::endl;
-            // delete[] books;
         }
         catch(const char* error)
         {
             std::cerr << error << std::endl;
-            // delete[] books;
         }
-        // delete[] books;
+        std::cout << "Debug: Deallocating memory for books array" << std::endl;
+        delete[] books; // free memory
+        books = nullptr; // set pointer to nullptr
+        std::cout << "Debug: Memory deallocated successfully" << std::endl;
     }
 
     // POST RECORD
     void POST(const char* filename, int size)
     {
-        // Best: O(n)
-        // Worst: O(n)
-        try
-        {
-            books = new BookModel[size]; // allocate memory 
+        if(size <= 0){
+            throw("Error: <Invalid size> Invalid size for books contribution");
+        } else {
 
-            for (int i = 0; i < size; ++i){
-                std::cout << std::endl; // for better readability in console
-                books[i].input(filename); // input records
+            std::cout << "Debug: Allocating memory for books array of size " << size << std::endl;
+            BookModel * books = new BookModel[size]; // allocate memory 
+
+            try
+            {
+                for (int i = 0; i < size; ++i){
+                    std::cout << std::endl; // for better readability in console
+                    books[i].input(filename); // input records
+                }
+
+                utils.writeToFile(filename, books, size); // Write records to file
+
+                std::cout << "Thank you for contributing to Digital Library" << std::endl
+                          << "\nYour contributions were saved successfully!" << std::endl;
             }
-
-            utils.writeToFile(filename, books, size); // Write records to file
-
-            std::cout << "\nYour contributions were saved successfully!" << std::endl
-                      << "Thank you for contributing to Digital Library" << std::endl;
-
+            catch(const char* error)
+            {
+                std::cerr << error << std::endl;
+            }
+            std::cout << "Debug: Deallocating memory for books array" << std::endl;
             delete[] books; // free memory
-        }
-        catch(const char* error)
-        {
-            std::cerr << error << std::endl;
-            delete[] books; // free memory incase of error
-        }
+            books = nullptr;
+            }
     }
 
     // PUT RECORD
     void PUT(const char* filename, int index, int size){
 
-            books = new BookModel[size]; // assign memory
+        std::cout << "Debug: Allocating memory for books array of size " << size << std::endl;
+        BookModel *books = new BookModel[size]; // assign memory
 
+        try
+        {
             utils.readFromFile(filename, books, size); // read records
 
             std::cout << "\n\tRecord you want to update\n" << std::endl;
             books[index].display(); // show record before its get updated
             std::cout << std::endl;
 
-            // Problem coming from here, when I am calling input and program is getting stoped
             books[index].input(filename); // take new input 
 
             std::cout << "\n\tUpdated Record\n" << std::endl;
@@ -524,35 +518,39 @@ public:
             std::ofstream f;
             f.open(filename, std::ios::binary | std::ios::out);
 
-            std::cout << "Debug: File opened for writing" << std::endl;
-
             if(!f.is_open()){
                 f.close();
-                throw("Error: <file> Unable to open file"); // incase of file is not available
+                throw("Error: <file> Unable to open file to update record"); // incase of file is not available
             } else{
                 f.write((const char *)&books[index], sizeof(BookModel)); // update the file
                 f.close();
             }
-
-            // delete[] books; // free memory
-
+        }
+        catch(const char* error)
+        {
+            std::cerr << error << std::endl;
+        }
+        std::cout << "Debug: Deallocating memory for books array" << std::endl;
+        delete[] books; // free memory
+        books = nullptr;
     }
 
     // DELETE RECORD
     void DELETE(const char* filename, int index, int size){
 
+        std::cout << "Debug: Allocating memory for books array of size " << size << std::endl;
+        BookModel *books = new BookModel[size]; // assign memory
+
         try
         {
-            books = new BookModel[size]; // assign memory
-
             utils.readFromFile(filename, books, size);
 
             // overwrite records
-            for (int i = index; i < size; ++i){
+            for (int i = index; i < size - 1; ++i){
                 books[i].unique_id = books[i + 1].unique_id;
                 strcpy(books[i].book_name, books[i + 1].book_name);
                 strcpy(books[i].book_author, books[i + 1].book_author);
-                books[i].year_of_publish = books[i + 1].year_of_publish;
+                strcpy(books[i].year_of_publish, books[i + 1].year_of_publish);
                 strcpy(books[i].category, books[i + 1].category);
             }
 
@@ -561,7 +559,7 @@ public:
             std::ofstream f; // to overwrite the records leaving index record
             f.open(filename, std::ios::binary | std::ios::out); // open file
 
-            if(!f){ // if file is not available
+            if(!f.is_open()){ // if file is not available
                 f.close();
                 throw("Error: <file> Unable to open file");
             } else { // if file is available
@@ -573,15 +571,14 @@ public:
             }
 
             std::cout << "\nRecord deleted successfully"<< std::endl;
-
-            // delete[] books;
         }
         catch(const char* error)
         {
-            // delete[] books;
             std::cerr << error << std::endl;
         }
-
+        std::cout << "Debug: Deallocating memory for books array" << std::endl;
+        delete[] books; // free memory
+        books = nullptr;
     }
 
     /* Array Filter Methods */
@@ -591,7 +588,7 @@ public:
 
             int size = utils.records_len(filename); // get length of available objects in file
 
-            books = new BookModel[size]; // allocate memory
+            BookModel *books = new BookModel[size]; // allocate memory
 
             utils.readFromFile(filename, books, size); // read data
 
@@ -615,17 +612,19 @@ public:
                         << std::endl << "Please Try Search Again..." << std::endl;
             }
 
-            // delete[] books; // free memory
+            delete[] books; // free memory
+            books = nullptr;
     }
 
     // Search by book Name
     void SearchByBookName(const char* filename, char *book_title){
 
+        int size = utils.records_len(filename); // get records size
+        BookModel *books = new BookModel[size]; // allocate memory
+
         try
         {
-            int size = utils.records_len(filename); // get records size
 
-            books = new BookModel[size]; // allocate memory
 
             utils.readFromFile(filename, books, size); // read records
 
@@ -650,12 +649,16 @@ public:
                         << std::endl << "Please Try Search Again..." << std::endl;
             }
 
-            // delete[] books; // free memory
+            delete[] books; // free memory
+            books = nullptr;
         }
         catch(const char* error)
         {
-            delete[] books; // free memory incase of error
-            std::cerr<<error<<std::endl;
+            std::cerr << error << std::endl;
+            if(books != nullptr){
+                delete[] books;
+                books = nullptr;
+            }
         }
         
     }
@@ -665,7 +668,7 @@ public:
 
             int size = utils.records_len(filename); // get total records
 
-            books = new BookModel[size]; // allocate memory
+            BookModel *books = new BookModel[size]; // allocate memory
 
             utils.readFromFile(filename, books, size); // read records
 
@@ -689,9 +692,9 @@ public:
                         << std::endl << "Please Try Search Again..." << std::endl;
             }
 
-            // delete[] books; // free memory
-        
-    }
+            delete[] books; // free memory
+            books = nullptr;
+        }
 
 };
 
@@ -701,7 +704,9 @@ class FRONTEND {
     Utility utils; // Reusable components/menus
 
 public:
-    void home_page(const char* filename, const char* menu_title){
+
+    void home_page(const char* filename, const char* menu_title)
+    {
         utils.home_page_menu(menu_title); // Home page menu from Utility class
         int records_size = utils.records_len(filename); // get total records
         do{
@@ -718,121 +723,121 @@ public:
                     exit(0); // exist program
                 }
 
-                if(option <= 0 || option > 8){ // validate option
+                if(option <= 0 || option > 9){ // validate option
                     throw("Error: <Invalid option> Please enter valid option");
                 } else { // perform actions 
                     switch (option)
                     {
-                    case 1: // Search page
-                        search_page(filename);
-                        break;
+                        case 1: // Search page
+                            search_page(filename);
+                            break;
 
-                    case 2: // fetch all books records from file
-                        backend.GET(filename);
-                        break;
+                        case 2: // fetch all books records from file
+                            backend.GET(filename);
+                            break;
 
-                    case 3: // Insert a new record
-                        int n;
-                        std::cout << "\nEnter no. of Books you want to contribute: ";
-                        std::cin >> n;
+                        case 3: // Insert a new record
+                            int n;
+                            std::cout << "\nEnter no. of Books you want to contribute: ";
+                            std::cin >> n;
 
-                        // terminate program incase of bad type error
-                        if(std::cin.fail()){ // bad type error
-                            std::cout << "Error: <Invalid type> Program crashed due to invalid type"; // print exception message before program terminates
-                            exit(0); // exist program
-                        }
-
-                        std::cin.ignore(); 
-                        backend.POST(filename, n);
-                        break;
-
-                    case 4: // Update existing record
-
-                            int index_to_update_record;
-                            while (true)
-                            {
-                                try
-                                {
-                                    std::cout << "\nEnter Book index to update record: ";
-                                    std::cin >> index_to_update_record;
-
-                                    std::cin.ignore(); // 
-
-                                    // terminate program incase of bad type error
-                                    if(std::cin.fail()){ // bad type error
-                                        std::cout << "Error: <Invalid type> Program crashed due to invalid type"; // print exception message before program terminates
-                                        exit(0); // exist program
-                                    }
-
-                                    if(index_to_update_record < 0 || index_to_update_record > records_size){
-                                        throw("Error: <Invalid Index> Please enter valid index to update record");
-                                    } else {
-                                        break;
-                                    }
-                                }
-                                catch(const char *error)
-                                {
-                                    std::cerr << error << std::endl;
-                                }
-                            }
-                            
-                            backend.PUT(filename, index_to_update_record, records_size);
-
-                        break;
-
-                    case 5: // Delete a record
-
-                            int index_to_delete_record;
-                            while (true)
-                            {
-                                try
-                                {
-                                    std::cout << "\nEnter Book index to delete record: ";
-                                    std::cin >> index_to_delete_record;
-
-                                    std::cin.ignore(); // 
-
-                                    // terminate program incase of bad type error
-                                    if(std::cin.fail()){ // bad type error
-                                        std::cout << "Error: <Invalid type> Program crashed due to invalid type"; // print exception message before program terminates
-                                        exit(0); // exist program
-                                    }
-
-                                    if(index_to_delete_record < 0 || index_to_delete_record > records_size){
-                                        throw("Error: <Invalid Index> Please enter valid index to update record");
-                                    } else {
-                                        break;
-                                    }
-                                }
-                                catch(const char *error)
-                                {
-                                    std::cerr << error << std::endl;
-                                }
+                            // terminate program incase of bad type error
+                            if(std::cin.fail()){ // bad type error
+                                std::cout << "Error: <Invalid type> Program crashed due to invalid type"; // print exception message before program terminates
+                                exit(0); // exist program
                             }
 
-                        backend.DELETE(filename, index_to_delete_record, records_size);
+                            std::cin.ignore(); 
+                            backend.POST(filename, n);
+                            break;
 
-                        break;
+                        case 4: // Update existing record
 
-                    case 6: // handle CSV import export
-                        utils.WriteToCSVFile(filename, records_size);
-                        break;
+                                int index_to_update_record;
+                                while (true)
+                                {
+                                    try
+                                    {
+                                        std::cout << "\nEnter Book index to update record: ";
+                                        std::cin >> index_to_update_record;
 
-                    case 7:
-                        utils.ReadFromCSVFile("BookModel.csv");
-                        break;
+                                        std::cin.ignore(); // 
 
-                    case 8: // Show help i.e. how to use Application
-                        help_page(filename);
-                        break;
+                                        // terminate program incase of bad type error
+                                        if(std::cin.fail()){ // bad type error
+                                            std::cout << "Error: <Invalid type> Program crashed due to invalid type"; // print exception message before program terminates
+                                            exit(0); // exist program
+                                        }
 
-                    case 9: // Terminate program
-                        std::cout << "\nThank You for using My Digital Library System" << std::endl;
-                        exit(0);
+                                        if(index_to_update_record < 0 || index_to_update_record > records_size){
+                                            throw("Error: <Invalid Index> Please enter valid index to update record");
+                                        } else {
+                                            break;
+                                        }
+                                    }
+                                    catch(const char *error)
+                                    {
+                                        std::cerr << error << std::endl;
+                                    }
+                                }
+                                
+                                backend.PUT(filename, index_to_update_record, records_size);
 
-                    default: // Throw exception incase of invalid option
-                        throw("Error: <Invalid option> Please enter valid option");
-                        break;
+                            break;
+
+                        case 5: // Delete a record
+
+                                int index_to_delete_record;
+                                while (true)
+                                {
+                                    try
+                                    {
+                                        std::cout << "\nEnter Book index to delete record: ";
+                                        std::cin >> index_to_delete_record;
+
+                                        std::cin.ignore(); // 
+
+                                        // terminate program incase of bad type error
+                                        if(std::cin.fail()){ // bad type error
+                                            std::cout << "Error: <Invalid type> Program crashed due to invalid type"; // print exception message before program terminates
+                                            exit(0); // exist program
+                                        }
+
+                                        if(index_to_delete_record < 0 || index_to_delete_record > records_size){
+                                            throw("Error: <Invalid Index> Please enter valid index to update record");
+                                        } else {
+                                            break;
+                                        }
+                                    }
+                                    catch(const char *error)
+                                    {
+                                        std::cerr << error << std::endl;
+                                    }
+                                }
+
+                            backend.DELETE(filename, index_to_delete_record, records_size);
+
+                            break;
+
+                        case 6: // Write to CSV File
+                            utils.WriteToCSVFile(filename, records_size);
+                            break;
+
+                        case 7:
+                            utils.ReadFromCSVFile("BookModel.csv");
+                            break;
+
+                        case 8: // Show help i.e. how to use Application
+                            help_page(filename);
+                            break;
+
+                        case 9: // Terminate program
+                            std::cout << "\nThank You for using My Digital Library System" << std::endl;
+                            exit(0);
+
+                        default: // Throw exception incase of invalid option
+                            throw("Error: <Invalid option> Please enter valid option");
+                            break;
                     }
                 }
 
@@ -958,11 +963,21 @@ public:
                             break;
 
                         case 2: // How I can use it?
-                            std::cout << "How to use it?" << std::endl;
+                            std::cout << "\nTo use My Digital Library System, follow these steps:" << std::endl
+                                      << "1. Navigate through the menu options to perform various operations." << std::endl
+                                      << "2. Use the 'Search a Book' option to find books by name, category, or author." << std::endl
+                                      << "3. Use the 'View All Books' option to see all the books in the library." << std::endl
+                                      << "4. Use the 'Contribute a Book' option to add new books to the library." << std::endl
+                                      << "5. Use the 'Update a Book' option to modify existing book records." << std::endl
+                                      << "6. Use the 'Delete a Book' option to remove books from the library." << std::endl
+                                      << "7. Use the 'Export Binary file data to CSV File' option to export data." << std::endl
+                                      << "8. Use the 'Import CSV file data to Binary File' option to import data." << std::endl
+                                      << "9. Use the 'Help' option for more information on how to use the system." << std::endl
+                                      << "10. Use the 'exit' option to close the application." << std::endl;
                             break;
 
                         case 3: // List Contributors
-                            std::cout << "\nContributor: (1)" << std::endl
+                            std::cout << "\nContributors: (1)" << std::endl
                                     << "Saqib Bedar [GitHub: https://github.com/saqibbedar/]" << std::endl;
                             break;
                         
@@ -1001,35 +1016,6 @@ public:
 
 };
 
-void handleFirstTime(const char* filename){ // if BookModel.bin is empty or not available, this function would be executed then only
-    std::cout << "\nWe can't find the BookModel.bin file" << std::endl
-              << "Please enter few records to interact with our Digital Library System" << std::endl;
-
-    int records_size;
-    std::cout << "Enter size: ";
-    std::cin >> records_size;
-
-    BookModel *books;
-    
-    try{
-        books = new BookModel[records_size];
-
-        for (int i = 0; i < records_size; i++)
-        {
-            books[i].input(filename);
-        }
-
-        Utility utils;
-
-        utils.writeToFile(filename, books, records_size);
-
-        delete[] books;
-    } catch(const char* error) {
-        delete[] books;
-        std::cerr << error << std::endl;
-    }
-}
-
 void RunApp(const char* filename){ // main function to run whole application
     FRONTEND f;
 
@@ -1052,15 +1038,50 @@ void RunApp(const char* filename){ // main function to run whole application
     } while (true);
 }
 
+void handleFirstTimeRun(const char* filename){ // if BookModel.bin is empty or not available, this function would be executed
+    std::cout << "\nWe couldn't find the "<< filename << " file." << std::endl
+              << "Please enter a few records to interaction with our Digital Library System.\n" << std::endl;
+
+    int records_size;
+    do
+    {
+        std::cout << "Enter no. of books you want to contribute: ";
+        std::cin >> records_size;
+    } while (records_size <= 0);
+
+    std::cin.ignore(); 
+
+    BookModel *books = new BookModel[records_size];
+
+    std::cout << "\n\tPlease Enter Book Details\n"<< std::endl;
+    // input few records 
+    for (int i = 0; i < records_size; i++)
+    {
+        books[i].input(filename);
+    }
+
+    Utility utils;
+
+    utils.writeToFile(filename, books, records_size);
+
+    delete[] books;
+    books = nullptr;
+
+    // Records saved successfully message
+    std::cout << "\nThanks for contribution, records were saved successfully!" << std::endl;
+
+    RunApp(filename); // now call the entry point function for interaction
+}
+
 int main(){
-    const char filename[14] = "BookModel.bin";
+    const char filename[14] = "BookModel.bin"; // don't change extension of this file to other i.e., .csv etc
 
     Utility utils;
 
     int records_size = utils.records_len(filename);
 
     if(records_size <= 0)  {
-        handleFirstTime(filename);
+        handleFirstTimeRun(filename);
     } else {
         RunApp(filename);
     }
@@ -1086,23 +1107,32 @@ bool FindByUID(const char* filename, int uid){
             return false;
         }
 
+        std::cout << "Debug: Allocating memory for books array of size " << size << std::endl;
         books = new BookModel[size];
 
         utils.readFromFile(filename, books, size);
         for (int i = 0; i < size; ++i){
             if(books[i].GetUID() == uid){
+                std::cout << "Debug: Deallocating memory for books array" << std::endl;
+                delete[] books; // clean memory
+                books = nullptr;
                 return true;
             }
         }
 
-        // delete[] books; // clean memory
-
+        std::cout << "Debug: Deallocating memory for books array" << std::endl;
+        delete[] books; // clean memory
+        books = nullptr;
         return false;
     }
     catch(const char* error)
     {
         std::cerr << error << std::endl;
-        delete[] books; // clean memory incase of exception
+        if(books != nullptr){
+            std::cout << "Debug: Deallocating memory for books array in catch block" << std::endl;
+            delete[] books;
+            books = nullptr;
+        }
+        return false;
     }
-
 }

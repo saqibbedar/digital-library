@@ -117,7 +117,7 @@ public:
 
                 if(is_number(year_of_publish)){
                     int year = std::stoi(year_of_publish);
-                    if(year >= 2024)
+                    if(year > 2024)
                         throw("Error: <Invalid publish year> Publish year can't be > 2024");
                     if(year < 1000)
                         throw("Error: <Invalid publish year> Please enter a 4-digit number");
@@ -313,9 +313,9 @@ public:
             if(!f.is_open()) {
                 f.close();
                 delete[] books;
+                books = nullptr;
                 throw("Error: <file> Unable to open CSV file to write records");
             } else {
-
 
                 int csv_file_size = GetCSVLength("BooksModel.csv"); // get records from csv file
 
@@ -354,19 +354,49 @@ public:
         } else {
 
             int size = GetCSVLength("BooksModel.csv");
-            BookModel *books = new BookModel[size];
-            // read the data
-            for (int i = 0; i < size; ++i){
-                f >> books[i].unique_id >> books[i].book_name >> books[i].book_author >> books[i].year_of_publish >> books[i].category;
+            if(size <= 0){
+                throw("Error: <Invalid Size> Please first enter some records in CSV file");
             }
 
-            for (int i = 0; i < size; ++i){
-                books[i].display();
-                std::cout << std::endl;
+            BookModel *books = new BookModel[size];
+            std::string temp;
+
+            std::getline(f, temp); // read first line
+
+            int i = 0;
+            while(std::getline(f, temp, ',')){
+                // read unique id
+                books[i].unique_id = std::stoi(temp);
+
+                // read book name
+                std::getline(f, temp, ',');
+                strcpy(books[i].book_name, temp.c_str());
+
+                // read book author
+                std::getline(f, temp, ',');
+                strcpy(books[i].book_author, temp.c_str());
+
+                // read year of publish
+                std::getline(f, temp, ',');
+                strcpy(books[i].year_of_publish, temp.c_str());
+
+                // read category
+                std::getline(f, temp);
+                strcpy(books[i].category, temp.c_str());
+
+                ++i;
             }
-                // writeToFile(filename, books, size);
+
+            // for (i = 0; i < size; ++i){
+            //     books[i].display();
+            // }
+
+            writeToFile(filename, books, size); // write data to binary
+
+            std::cout << "\nData Imported Successfully to Binary file" << std::endl; // screen message
 
             delete[] books;
+            books = nullptr;
         }
     }
 
@@ -441,7 +471,6 @@ public:
         // Best: O(n)
         // Worst: O(n)
         int size = utils.records_len(filename);
-        std::cout << "Debug: Allocating memory for books array of size " << size << std::endl;
         BookModel *books = new BookModel[size];
         try
         {
@@ -456,10 +485,9 @@ public:
         {
             std::cerr << error << std::endl;
         }
-        std::cout << "Debug: Deallocating memory for books array" << std::endl;
+        
         delete[] books; // free memory
-        books = nullptr; // set pointer to nullptr
-        std::cout << "Debug: Memory deallocated successfully" << std::endl;
+        books = nullptr;
     }
 
     // POST RECORD
@@ -469,7 +497,6 @@ public:
             throw("Error: <Invalid size> Invalid size for books contribution");
         } else {
 
-            std::cout << "Debug: Allocating memory for books array of size " << size << std::endl;
             BookModel * books = new BookModel[size]; // allocate memory 
 
             try
@@ -488,16 +515,15 @@ public:
             {
                 std::cerr << error << std::endl;
             }
-            std::cout << "Debug: Deallocating memory for books array" << std::endl;
+
             delete[] books; // free memory
             books = nullptr;
-            }
+        }
     }
 
     // PUT RECORD
     void PUT(const char* filename, int index, int size){
 
-        std::cout << "Debug: Allocating memory for books array of size " << size << std::endl;
         BookModel *books = new BookModel[size]; // assign memory
 
         try
@@ -516,13 +542,15 @@ public:
 
             // setup ofstream to update file
             std::ofstream f;
-            f.open(filename, std::ios::binary | std::ios::out);
+            f.open(filename, std::ios::binary | std::ios::out | std::ios::trunc);
 
             if(!f.is_open()){
                 f.close();
                 throw("Error: <file> Unable to open file to update record"); // incase of file is not available
             } else{
-                f.write((const char *)&books[index], sizeof(BookModel)); // update the file
+                for (int i = 0; i < size; ++i) {
+                    f.write((const char *)&books[i], sizeof(BookModel)); // write all records back to the file
+                }
                 f.close();
             }
         }
@@ -530,7 +558,7 @@ public:
         {
             std::cerr << error << std::endl;
         }
-        std::cout << "Debug: Deallocating memory for books array" << std::endl;
+
         delete[] books; // free memory
         books = nullptr;
     }
@@ -538,7 +566,6 @@ public:
     // DELETE RECORD
     void DELETE(const char* filename, int index, int size){
 
-        std::cout << "Debug: Allocating memory for books array of size " << size << std::endl;
         BookModel *books = new BookModel[size]; // assign memory
 
         try
@@ -576,7 +603,7 @@ public:
         {
             std::cerr << error << std::endl;
         }
-        std::cout << "Debug: Deallocating memory for books array" << std::endl;
+        
         delete[] books; // free memory
         books = nullptr;
     }
@@ -824,7 +851,7 @@ public:
                             break;
 
                         case 7:
-                            utils.ReadFromCSVFile("BookModel.csv");
+                            utils.ReadFromCSVFile("BookModel.bin");
                             break;
 
                         case 8: // Show help i.e. how to use Application
@@ -1047,6 +1074,10 @@ void handleFirstTimeRun(const char* filename){ // if BookModel.bin is empty or n
     {
         std::cout << "Enter no. of books you want to contribute: ";
         std::cin >> records_size;
+        if(std::cin.fail()){
+            std::cout << "Error: <Invalid type> Program crashed due to invalid type" << std::endl;
+            exit(0); // stop the program
+        }
     } while (records_size <= 0);
 
     std::cin.ignore(); 
@@ -1076,19 +1107,18 @@ void handleFirstTimeRun(const char* filename){ // if BookModel.bin is empty or n
 int main(){
     const char filename[14] = "BookModel.bin"; // don't change extension of this file to other i.e., .csv etc
 
-    Utility utils;
+    Utility utils; // for records length
 
-    int records_size = utils.records_len(filename);
+    int records_size = utils.records_len(filename); // get records size from BookModel.bin
 
-    if(records_size <= 0)  {
+    if(records_size <= 0)  { // Incase if there is no record or BookModel.bin is not available
         handleFirstTimeRun(filename);
-    } else {
+    } else { // main entry point function
         RunApp(filename);
     }
     
     return 0;
 }
-
 
 // Check if a book id is already taken? 
 bool FindByUID(const char* filename, int uid){
@@ -1098,41 +1128,25 @@ bool FindByUID(const char* filename, int uid){
     BookModel *books;
     Utility utils;
 
-    try
-    {
-        // get total objects size from file
-        int size = utils.records_len(filename);
+    // get total objects size from file
+    int size = utils.records_len(filename);
 
-        if(size <= 0){ // return false if there is no record available
-            return false;
-        }
-
-        std::cout << "Debug: Allocating memory for books array of size " << size << std::endl;
-        books = new BookModel[size];
-
-        utils.readFromFile(filename, books, size);
-        for (int i = 0; i < size; ++i){
-            if(books[i].GetUID() == uid){
-                std::cout << "Debug: Deallocating memory for books array" << std::endl;
-                delete[] books; // clean memory
-                books = nullptr;
-                return true;
-            }
-        }
-
-        std::cout << "Debug: Deallocating memory for books array" << std::endl;
-        delete[] books; // clean memory
-        books = nullptr;
+    if(size <= 0){ // return false if there is no record available
         return false;
     }
-    catch(const char* error)
-    {
-        std::cerr << error << std::endl;
-        if(books != nullptr){
-            std::cout << "Debug: Deallocating memory for books array in catch block" << std::endl;
-            delete[] books;
+
+    books = new BookModel[size];
+
+    utils.readFromFile(filename, books, size);
+    for (int i = 0; i < size; ++i){
+        if(books[i].GetUID() == uid){
+            delete[] books; // clean memory
             books = nullptr;
+            return true;
         }
-        return false;
     }
+
+    delete[] books; // clean memory
+    books = nullptr;
+    return false;
 }
